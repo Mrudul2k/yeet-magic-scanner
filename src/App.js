@@ -5,7 +5,7 @@ import './App.css';
 const YEET_ADDRESS = '0x08A38Caa631DE329FF2DAD1656CE789F31AF3142';
 const AIRDROP_ADDRESS = '0x1d6bbc466bbd0150a5e91bf337fa696a8f3fa3d7';
 const RPC_URL = 'https://rpc.berachain.com';
-const COLLECTION_SYMBOL = 'yeetard-nfts-36';
+const COLLECTION_SYMBOL = ' YEETNFT';
 const LISTING_API = `https://api-mainnet.magiceden.dev/v2/collections/${COLLECTION_SYMBOL}/listings?offset=0&limit=50`;
 
 const AIRDROP_ABI = [
