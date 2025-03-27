@@ -51,6 +51,12 @@ function App() {
     try {
       const listingRes = await fetch(LISTING_API);
       const listingData = await listingRes.json();
+      
+      // 👇 Paste this here
+      console.log('Listing API Response:', listingData);
+      
+      
+      
 
       const listedNFTs = listingData.slice(0, 50); // First 50 NFTs
       const provider = new ethers.JsonRpcProvider(RPC_URL);
