@@ -100,4 +100,18 @@ function App() {
         <div style={{ marginTop: 20 }}>
           {results.map((r, idx) => (
             <div key={idx} style={{ border: '1px solid #ccc', padding: 15, marginBottom: 15 }}>
-              <img src={r.image} alt={`NFT ${r.tokenId}`} width={100} style={{ borderRadius: 10 }}
+              <img src={r.image} alt={`NFT ${r.tokenId}`} width={100} style={{ borderRadius: 10 }} />
+              <p><strong>Token ID:</strong> {r.tokenId}</p>
+              <p>💸 Listed at: {r.price} BERA</p>
+              <p>🟢 Claimed: {r.claimed.toFixed(2)} YEET</p>
+              <p>🟡 Claimable: {r.claimable.toFixed(2)} YEET {r.usdValue && `(≈ $${r.usdValue} USD)`}</p>
+              <p>💰 Total Earned: {r.total.toFixed(2)} YEET</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
