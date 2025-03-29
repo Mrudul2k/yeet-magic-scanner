@@ -5,7 +5,6 @@ import './App.css';
 const YEET_ADDRESS = '0x08A38Caa631DE329FF2DAD1656CE789F31AF3142';
 const AIRDROP_ADDRESS = '0x1d6bbc466bbd0150a5e91bf337fa696a8f3fa3d7';
 const RPC_URL = 'https://rpc.berachain.com';
-const MAGICEDEN_API = 'https://api-mainnet.magiceden.dev/v3/rtp/berachain/collections/yeetard-nfts-36/listings?limit=50';
 
 const AIRDROP_ABI = [
   {
@@ -26,86 +25,81 @@ const AIRDROP_ABI = [
 
 function App() {
   const [results, setResults] = useState([]);
+  const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [yeetUsd, setYeetUsd] = useState(null);
 
-  const fetchYEETPrice = async () => {
-    try {
-      const res = await fetch(`https://api.dexscreener.com/latest/dex/search?q=${YEET_ADDRESS}`);
-      const data = await res.json();
-      const price = parseFloat(data.pairs?.[0]?.priceUsd);
-      if (price) setYeetUsd(price);
-    } catch (err) {
-      console.error('Failed to fetch YEET price', err);
-    }
-  };
-
-  const scanListings = async () => {
+  const fetchData = async (tokenIds) => {
     setLoading(true);
-    setResults([]);
-    await fetchYEETPrice();
+    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    const contract = new ethers.Contract(AIRDROP_ADDRESS, AIRDROP_ABI, provider);
+    const allResults = [];
 
-    try {
-      const listingsRes = await fetch(MAGICEDEN_API);
-      const listings = await listingsRes.json();
+    for (let tokenId of tokenIds) {
+      try {
+        const claimedRaw = await contract.claimed(tokenId);
+        const claimableRaw = await contract.claimable(tokenId);
+        const claimed = parseFloat(ethers.formatUnits(claimedRaw, 18));
+        const claimable = parseFloat(ethers.formatUnits(claimableRaw, 18));
+        const total = claimed + claimable;
 
-      const provider = new ethers.JsonRpcProvider(RPC_URL);
-      const contract = new ethers.Contract(AIRDROP_ADDRESS, AIRDROP_ABI, provider);
-
-      const listingData = listings?.results || listings;
-
-      const data = await Promise.all(listingData.map(async (item) => {
-        const tokenId = parseInt(item.token.tokenId);
-        const price = parseFloat(item.price.amount.native);
-
-        try {
-          const claimed = parseFloat(ethers.formatUnits(await contract.claimed(tokenId), 18));
-          const claimable = parseFloat(ethers.formatUnits(await contract.claimable(tokenId), 18));
-          const total = claimed + claimable;
-          const usdValue = yeetUsd ? (claimable * yeetUsd).toFixed(2) : null;
-
-          return {
-            tokenId,
-            price,
-            claimed,
-            claimable,
-            total,
-            usdValue,
-            image: item.token.image,
-          };
-        } catch (err) {
-          console.error(`Error fetching for token ${tokenId}`, err);
-          return null;
-        }
-      }));
-
-      setResults(data.filter(Boolean));
-    } catch (err) {
-      console.error('Failed to fetch listings', err);
+        allResults.push({ tokenId, claimed, claimable, total });
+      } catch (err) {
+        allResults.push({ tokenId, error: true });
+      }
     }
 
+    setResults(allResults);
     setLoading(false);
   };
 
+  const handleSingleCheck = () => {
+    const tokenId = input.trim();
+    if (tokenId) {
+      fetchData([tokenId]);
+    }
+  };
+
+  const handleBulkCheck = () => {
+    const tokenIds = input.split(',').map(id => id.trim()).filter(id => id);
+    if (tokenIds.length) {
+      fetchData(tokenIds);
+    }
+  };
+
   return (
-    <div style={{ padding: 30, fontFamily: 'monospace' }}>
-      <h1>🧠 YEET NFT Tracker + Magic Eden</h1>
-      <button onClick={scanListings} style={{ padding: 10, fontSize: 16 }}>
-        🔍 Scan Magic Eden Listings
+    <div style={{ padding: '30px', fontFamily: 'monospace' }}>
+      <h1>🧠 YEET NFT Airdrop Checker</h1>
+      <input
+        type="text"
+        placeholder="Enter token ID(s) (e.g., 123 or 123,456,789)"
+        value={input}
+        onChange={e => setInput(e.target.value)}
+        style={{ padding: '10px', width: '400px', marginBottom: '10px' }}
+      />
+      <br />
+      <button onClick={handleSingleCheck} style={{ padding: '10px 20px', marginRight: '10px' }}>
+        🔍 Check Single
+      </button>
+      <button onClick={handleBulkCheck} style={{ padding: '10px 20px' }}>
+        📦 Check Bulk
       </button>
 
-      {loading && <p>Loading listings + chain data...</p>}
+      {loading && <p>Loading...</p>}
 
       {!loading && results.length > 0 && (
         <div style={{ marginTop: 20 }}>
-          {results.map((r, idx) => (
-            <div key={idx} style={{ border: '1px solid #ccc', padding: 15, marginBottom: 15 }}>
-              <img src={r.image} alt={`NFT ${r.tokenId}`} width={100} style={{ borderRadius: 10 }} />
+          {results.map((r, i) => (
+            <div key={i} style={{ borderBottom: '1px solid #ccc', marginBottom: 15 }}>
               <p><strong>Token ID:</strong> {r.tokenId}</p>
-              <p>💸 Listed at: {r.price} BERA</p>
-              <p>🟢 Claimed: {r.claimed.toFixed(2)} YEET</p>
-              <p>🟡 Claimable: {r.claimable.toFixed(2)} YEET {r.usdValue && `(≈ $${r.usdValue} USD)`}</p>
-              <p>💰 Total Earned: {r.total.toFixed(2)} YEET</p>
+              {r.error ? (
+                <p style={{ color: 'red' }}>⚠️ Error fetching data</p>
+              ) : (
+                <>
+                  <p>🟢 Claimed: {r.claimed.toFixed(4)} YEET</p>
+                  <p>🟡 Claimable: {r.claimable.toFixed(4)} YEET</p>
+                  <p>💰 Total: {r.total.toFixed(4)} YEET</p>
+                </>
+              )}
             </div>
           ))}
         </div>
