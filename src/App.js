@@ -28,6 +28,7 @@ function App() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [highClaimables, setHighClaimables] = useState([]);
+  const [sortByClaimable, setSortByClaimable] = useState(false);
 
   const fetchData = async (tokenIds) => {
     setLoading(true);
@@ -75,6 +76,14 @@ function App() {
     }
   };
 
+  const toggleSort = () => {
+    setSortByClaimable(!sortByClaimable);
+  };
+
+  const displayedResults = sortByClaimable
+    ? [...results].sort((a, b) => (b.claimable || 0) - (a.claimable || 0))
+    : results;
+
   return (
     <div style={{ padding: '30px', fontFamily: 'monospace' }}>
       <h1>🧠 YEET NFT Airdrop Checker</h1>
@@ -94,12 +103,20 @@ function App() {
         📦 Check Bulk
       </button>
 
+      {results.length > 0 && (
+        <div style={{ marginTop: 30 }}>
+          <button onClick={toggleSort} style={{ padding: '6px 16px', marginBottom: '10px' }}>
+            🔃 Sort by Claimable {sortByClaimable ? '(Desc)' : '(Off)'}
+          </button>
+        </div>
+      )}
+
       {loading && <p>Loading...</p>}
 
-      {!loading && results.length > 0 && (
+      {!loading && displayedResults.length > 0 && (
         <div style={{ marginTop: 20 }}>
           <h2>📋 Results</h2>
-          {results.map((r, i) => (
+          {displayedResults.map((r, i) => (
             <div key={i} style={{ borderBottom: '1px solid #ccc', marginBottom: 15 }}>
               <p><strong>Token ID:</strong> {r.tokenId}</p>
               {r.error ? (
